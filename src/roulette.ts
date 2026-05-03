@@ -16,7 +16,8 @@ import type { ColorTheme } from './types/ColorTheme';
 import type { MouseEventHandlerName, MouseEventName } from './types/mouseEvents.type';
 import type { UIObject } from './UIObject';
 import { bound } from './utils/bound.decorator';
-import { parseName, shuffle } from './utils/utils';
+import { globalPRNG } from './utils/prng';
+import { parseName } from './utils/utils';
 import { VideoRecorder } from './utils/videoRecorder';
 
 export class Roulette extends EventTarget {
@@ -42,7 +43,11 @@ export class Roulette extends EventTarget {
   private _totalMarbleCount = 0;
   private _goalDist: number = Infinity;
   private _isRunning: boolean = false;
+  private _isSimulating: boolean = false;
+  private _seatingMode: boolean = false;
+  private _seatingSeed: number | undefined = undefined;
   private _winner: Marble | null = null;
+  private _predeterminedOrder: string[] = [];
 
   private _uiObjects: UIObject[] = [];
 
@@ -106,19 +111,19 @@ export class Roulette extends EventTarget {
     }
     this._lastTime = currentTime;
 
-    const interval = (this._updateInterval / 1000) * this._timeScale;
-
     while (this._elapsed >= this._updateInterval) {
+      const interval = (this._updateInterval / 1000) * this._timeScale;
       this.physics.step(interval);
       this._updateMarbles(this._updateInterval);
+
+      if (this._marbles.length > 1) {
+        this._marbles.sort((a, b) => b.y - a.y);
+      }
+
       this._particleManager.update(this._updateInterval);
       this._updateEffects(this._updateInterval);
       this._elapsed -= this._updateInterval;
       this._uiObjects.forEach((obj) => obj.update(this._updateInterval));
-    }
-
-    if (this._marbles.length > 1) {
-      this._marbles.sort((a, b) => b.y - a.y);
     }
 
     if (this._stage) {
@@ -147,33 +152,54 @@ export class Roulette extends EventTarget {
       if (marble.y > this._stage.goalY) {
         this._winners.push(marble);
         if (this._isRunning && this._winners.length === this._winnerRank + 1) {
-          this.dispatchEvent(new CustomEvent('goal', { detail: { winner: marble.name } }));
+          if (!this._isSimulating) {
+            this.dispatchEvent(new CustomEvent('goal', { detail: { winner: marble.name } }));
+            this._particleManager.shot(this._renderer.width, this._renderer.height);
+            if (this._recorder) {
+              setTimeout(() => {
+                this._recorder.stop();
+              }, 1000);
+            }
+          }
           this._winner = marble;
           this._isRunning = false;
-          this._particleManager.shot(this._renderer.width, this._renderer.height);
-          setTimeout(() => {
-            this._recorder.stop();
-          }, 1000);
+          if (!this._isSimulating && this._seatingMode) {
+            const allWinners = this._winners.map((w) => w.name);
+            setTimeout(() => {
+              this.dispatchEvent(new CustomEvent('seatingComplete', { detail: { winners: allWinners } }));
+            }, 2000);
+          }
         } else if (
           this._isRunning &&
           this._winnerRank === this._winners.length &&
           this._winnerRank === this._totalMarbleCount - 1
         ) {
-          this.dispatchEvent(
-            new CustomEvent('goal', {
-              detail: { winner: this._marbles[i + 1].name },
-            })
-          );
-          this._winner = this._marbles[i + 1];
+          const finalMarble = this._marbles.find((candidate) => candidate !== marble);
+          if (!finalMarble) continue;
+          if (!this._isSimulating) {
+            this.dispatchEvent(
+              new CustomEvent('goal', {
+                detail: { winner: finalMarble.name },
+              })
+            );
+            this._particleManager.shot(this._renderer.width, this._renderer.height);
+            if (this._recorder) {
+              setTimeout(() => {
+                this._recorder.stop();
+              }, 1000);
+            }
+          }
+          this._winner = finalMarble;
           this._isRunning = false;
-          this._particleManager.shot(this._renderer.width, this._renderer.height);
-          setTimeout(() => {
-            this._recorder.stop();
-          }, 1000);
+          if (!this._isSimulating && this._seatingMode) {
+            const allWinners = this._winners.map((w) => w.name);
+            allWinners.push(finalMarble.name);
+            setTimeout(() => {
+              this.dispatchEvent(new CustomEvent('seatingComplete', { detail: { winners: allWinners } }));
+            }, 2000);
+          }
         }
-        setTimeout(() => {
-          this.physics.removeMarble(marble.id);
-        }, 500);
+        this.physics.removeMarble(marble.id);
       }
     }
 
@@ -182,7 +208,9 @@ export class Roulette extends EventTarget {
     this._goalDist = Math.abs(this._stage.zoomY - topY);
     this._timeScale = this._calcTimeScale();
 
-    this._marbles = this._marbles.filter((marble) => marble.y <= this._stage?.goalY);
+    this._marbles = this._marbles.filter(
+      (marble) => !this._winners.includes(marble) && marble.y <= (this._stage?.goalY || 0)
+    );
   }
 
   private _calcTimeScale(): number {
@@ -316,6 +344,10 @@ export class Roulette extends EventTarget {
     if (this._winnerRank >= this._marbles.length) {
       this._winnerRank = this._marbles.length - 1;
     }
+    this._elapsed = 0;
+    this._lastTime = Date.now();
+    this._timeScale = 1;
+    this._goalDist = Infinity;
     this._camera.startFollowingMarbles();
 
     if (this._autoRecording) {
@@ -380,11 +412,12 @@ export class Roulette extends EventTarget {
       }
     });
 
-    const orders = shuffle(
+    const orders = globalPRNG.shuffle(
       Array(totalCount)
         .fill(0)
         .map((_, i) => i)
     );
+
     members.forEach((member) => {
       if (member) {
         for (let j = 0; j < member.count; j++) {
@@ -417,15 +450,14 @@ export class Roulette extends EventTarget {
     }
   }
 
-  private _clearMap() {
-    this.physics.clear();
-    this._marbles = [];
-  }
-
   public reset() {
-    this.clearMarbles();
-    this._clearMap();
+    this.physics.resetWorld();
+    this._isRunning = false;
+    this._winner = null;
+    this._winners = [];
+    this._marbles = [];
     this._loadMap();
+    this._timeScale = 1;
     this._goalDist = Infinity;
   }
 
@@ -450,5 +482,193 @@ export class Roulette extends EventTarget {
     this._stage = stages[index];
     this.setMarbles(names);
     this._camera.initializePosition();
+  }
+
+  public findValidSeed(names: string[], isValid: (winners: string[]) => boolean, maxAttempts: number = 100): number {
+    this._isSimulating = true;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const seed = Date.now() + attempt;
+      globalPRNG.setSeed(seed);
+      this.setMarbles(names);
+
+      this._winners = []; // Reset winners for each attempt
+      this._isRunning = true;
+      this._winnerRank = this._marbles.length - 1; // get all winners
+
+      this.physics.start();
+      this._marbles.forEach((marble) => (marble.isActive = true));
+
+      let emergencyBreak = 0;
+      while (this._isRunning && emergencyBreak < 5000000) {
+        // Max 5,000,000 steps
+        emergencyBreak++;
+        const interval = (this._updateInterval / 1000) * this._timeScale;
+        this.physics.step(interval);
+        this._updateMarbles(this._updateInterval);
+
+        if (this._marbles.length > 1) {
+          this._marbles.sort((a, b) => b.y - a.y);
+        }
+      }
+
+      this.physics.clear(); // Clean up physics world
+
+      // Build full winner list — the last marble (actual "winner") may not be in _winners
+      const winnerNames = this._winners.map((w) => w.name);
+      if (this._winner && !winnerNames.includes(this._winner.name)) {
+        winnerNames.push(this._winner.name);
+      }
+      if (isValid(winnerNames)) {
+        this._isSimulating = false;
+        return seed;
+      }
+    }
+    this._isSimulating = false;
+    return -1; // Failed to find
+  }
+
+  public prepareSeatingMode(seed: number) {
+    this._seatingMode = true;
+    this._seatingSeed = seed;
+    if (typeof window !== 'undefined' && (window as any).options) {
+      (window as any).options.useSkills = false;
+    }
+  }
+
+  public setPredeterminedOrder(order: string[]) {
+    this._predeterminedOrder = order;
+  }
+
+  private _getFinishOrderIds(): number[] {
+    const finishOrderIds = this._winners.map((winner) => winner.id);
+    if (this._winner && !finishOrderIds.includes(this._winner.id)) {
+      finishOrderIds.push(this._winner.id);
+    }
+    return finishOrderIds;
+  }
+
+  private _runHeadlessSimulationAndGetMappedNames(originalNames: string[]): string[] | null {
+    const seed = this._seatingSeed !== undefined ? this._seatingSeed : Date.now();
+    this._isSimulating = true;
+
+    this.reset();
+    let maxWeight = -Infinity;
+    let minWeight = Infinity;
+    const members = originalNames
+      .map((nameString, originalIndex) => {
+        const result = parseName(nameString);
+        if (!result) return null;
+        if (result.weight > maxWeight) maxWeight = result.weight;
+        if (result.weight < minWeight) minWeight = result.weight;
+        return { ...result, originalIndex };
+      })
+      .filter((m) => !!m);
+
+    const gap = maxWeight - minWeight;
+    let totalCount = 0;
+    members.forEach((member) => {
+      if (member) {
+        member.weight = 0.1 + (gap ? (member.weight - minWeight) / gap : 0);
+        totalCount += member.count;
+      }
+    });
+
+    globalPRNG.setSeed(seed);
+    const orders = globalPRNG.shuffle(Array.from({ length: totalCount }).map((_, i) => i));
+
+    const idToOriginalIndexMap = new Map<number, number>();
+    members.forEach((member) => {
+      if (member) {
+        for (let j = 0; j < member.count; j++) {
+          const order = orders.pop() || 0;
+          idToOriginalIndexMap.set(order, member.originalIndex);
+          this._marbles.push(new Marble(this.physics, order, totalCount, member.name, member.weight));
+        }
+      }
+    });
+
+    this._totalMarbleCount = totalCount;
+    this._winners = [];
+    this._isRunning = true;
+    this._winnerRank = this._marbles.length - 1;
+    this._timeScale = 1;
+    this._goalDist = Infinity;
+
+    this.physics.start();
+    this._marbles.forEach((m) => (m.isActive = true));
+
+    let emergencyBreak = 0;
+    while (this._isRunning && emergencyBreak < 100000) {
+      emergencyBreak++;
+      const interval = (this._updateInterval / 1000) * this._timeScale;
+      this.physics.step(interval);
+      this._updateMarbles(this._updateInterval);
+      if (this._marbles.length > 1) {
+        this._marbles.sort((a, b) => b.y - a.y);
+      }
+    }
+
+    const finishOrderIds = this._getFinishOrderIds();
+    if (finishOrderIds.length < totalCount) {
+      this.reset();
+      this._isSimulating = false;
+      globalPRNG.setSeed(seed);
+      return null;
+    }
+
+    const idToNameMap = new Map<number, string>();
+    for (let i = 0; i < finishOrderIds.length && i < this._predeterminedOrder.length; i++) {
+      idToNameMap.set(finishOrderIds[i], this._predeterminedOrder[i]);
+    }
+
+    const assignedNames = new Set(this._predeterminedOrder.slice(0, finishOrderIds.length));
+    const unassignedNames = originalNames.filter((n) => !assignedNames.has(n));
+
+    const finalNames = [...originalNames];
+    const allSimulatedMarbles = [...this._winners, ...this._marbles];
+    if (this._winner && !allSimulatedMarbles.includes(this._winner)) {
+      allSimulatedMarbles.push(this._winner);
+    }
+    for (const marble of allSimulatedMarbles) {
+      const origIndex = idToOriginalIndexMap.get(marble.id);
+      if (origIndex !== undefined) {
+        if (idToNameMap.has(marble.id)) {
+          finalNames[origIndex] = idToNameMap.get(marble.id)!;
+        } else {
+          finalNames[origIndex] = unassignedNames.shift() || originalNames[origIndex];
+        }
+      }
+    }
+
+    this.reset();
+    this._isSimulating = false;
+    this._isRunning = false;
+
+    // IMPORTANT: Reset the seed so the actual run produces identical physical results!
+    globalPRNG.setSeed(seed);
+    return finalNames;
+  }
+
+  public startSeating() {
+    if (this._marbles.length === 0) {
+      return;
+    }
+
+    const originalNames = this._marbles.map((marble) => marble.name);
+    if (this._predeterminedOrder.length > 0) {
+      const mappedNames = this._runHeadlessSimulationAndGetMappedNames(originalNames);
+      if (mappedNames) {
+        this.setMarbles(mappedNames);
+      } else {
+        this.setMarbles(originalNames);
+      }
+    }
+
+    options.winningRank = this._marbles.length - 1;
+    this.start();
+  }
+
+  public getWinners(): string[] {
+    return this._winners.map((w) => w.name);
   }
 }

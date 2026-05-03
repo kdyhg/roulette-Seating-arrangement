@@ -4,6 +4,7 @@ export class VideoRecorder {
   private targetCanvas: HTMLCanvasElement;
   private mediaRecorder: MediaRecorder;
   private videoStream: MediaStream;
+  private stopping: boolean = false;
 
   private chunks: Blob[] = [];
 

@@ -18,8 +18,8 @@
   },
   "scripts": {
     "lint": "biome check --fix src/",
-    "dev": "parcel index.html --port 1235",
-    "build": "parcel build index.html --public-url /roulette/ && node scripts/build-sw.js"
+    "dev": "parcel index.html seating.html --port 1235",
+    "build": "parcel build index.html seating.html --public-url /roulette/ && node scripts/build-sw.js"
   },
   "dependencies": {
     "box2d-wasm": "^7.0.0"

@@ -114,21 +114,73 @@
 
   function initialize() {
     if (!window.roulette || !window.roulette.isReady) {
-      console.log('does not loaded yet');
       setTimeout(initialize, 100);
       return;
     }
-    console.log('initializing start');
-
     const urlParams = new URLSearchParams(window.location.search);
-    const namesFromUrl = urlParams.get('names');
+    const seatingMode = urlParams.get('seating_mode');
+    const seatingNames = urlParams.get('seating_names');
 
-    if (namesFromUrl) {
-      document.querySelector('#in_names').value = namesFromUrl.replace(/,/g, '\n');
-    } else {
-      const savedNames = localStorage.getItem('mbr_names');
-      if (savedNames) {
-        document.querySelector('#in_names').value = savedNames;
+    // Seating mode flag
+    let isSeatingMode = false;
+
+    if (seatingMode === 'true' && seatingNames) {
+      // Seating Mode: fill names, DON'T auto-start, collect all rankings
+      isSeatingMode = true;
+
+      const names = decodeURIComponent(seatingNames).split(',');
+      // Fill the textarea with names so they appear as marbles
+      document.querySelector('#in_names').value = names.join('\n');
+
+      // Prepare the roulette engine for seating mode (disables skills)
+      window.roulette.prepareSeatingMode(Date.now());
+
+      const rouletteCanvas = document.querySelector('canvas');
+      if (rouletteCanvas) rouletteCanvas.style.visibility = 'hidden';
+
+      // Set winner type to 'last' so all marbles are ranked
+      winnerType = 'last';
+      
+      // Load predetermined order and pass to engine
+      const predeterminedOrder = JSON.parse(localStorage.getItem('seating_predetermined_order') || '[]');
+      if (predeterminedOrder.length > 0) {
+        window.roulette.setPredeterminedOrder(predeterminedOrder);
+      }
+
+      // Trigger marble setup from textarea contents
+      getReady();
+
+      // Listen for seatingComplete event — fires when ALL marbles finish
+      window.roulette.addEventListener('seatingComplete', (e) => {
+        const allWinners = e.detail.winners;
+        localStorage.setItem('seating_result_winners', JSON.stringify(allWinners));
+        setTimeout(() => {
+          window.location.href = 'seating.html?result=ready';
+        }, 3000);
+      });
+
+      // Auto-start roulette and dismiss notice
+      setTimeout(() => {
+        localStorage.setItem('notice', '999'); // suppress notice
+        const noticeEl = document.getElementById('notice');
+        if (noticeEl) noticeEl.style.display = 'none';
+        
+        document.querySelector('#btnStart').click();
+      }, 500);
+
+      // DON'T return — let the normal initialization continue so buttons work
+    }
+
+    if (!isSeatingMode) {
+      const namesFromUrl = urlParams.get('names');
+
+      if (namesFromUrl) {
+        document.querySelector('#in_names').value = namesFromUrl.replace(/,/g, '\n');
+      } else {
+        const savedNames = localStorage.getItem('mbr_names');
+        if (savedNames) {
+          document.querySelector('#in_names').value = savedNames;
+        }
       }
     }
     document.querySelector('#in_names').addEventListener('input', () => {
@@ -188,9 +240,16 @@
           umami.track('marble', { name: m.name, count: m.count });
         });
       }
-      window.roulette.start();
+      if (isSeatingMode) {
+        window.roulette.startSeating();
+        const rouletteCanvas = document.querySelector('canvas');
+        if (rouletteCanvas) rouletteCanvas.style.visibility = 'visible';
+      } else {
+        window.roulette.start();
+      }
       document.querySelector('#settings').classList.add('hide');
-      document.querySelector('#donate').classList.add('hide');
+      const donateEl = document.querySelector('#donate');
+      if (donateEl) donateEl.classList.add('hide');
     });
 
     document.querySelector('#chkAutoRecording').addEventListener('change', (e) => {
@@ -382,6 +441,10 @@
       <a href='https://marblerouletteshop.com' target='_blank' id="btnShop" class='btn new' title='MarbleRoulette Shop'>
         <img src='assets/images/marblerouletteshop.png' />
       </a>
+      <div class="sep"></div>
+      <button id="btnSeatingMode" style="background-color: #5851db; color: white; padding: 0 10px; border-radius: 4px; font-weight: bold; cursor: pointer;" onclick="window.location.href='seating.html'">
+        🪑 자리배치
+      </button>
       <div class="sep"></div>
       <button id="btnShuffle">
         <i class="icon shuffle"></i>

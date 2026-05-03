@@ -1,4 +1,5 @@
 import Box2DFactory from 'box2d-wasm';
+import { globalPRNG } from './utils/prng';
 import type { StageDef } from './data/maps';
 import type { IPhysics } from './IPhysics';
 import type { MapEntity, MapEntityState } from './types/MapEntity.type';
@@ -22,6 +23,15 @@ export class Box2dPhysics implements IPhysics {
 
   clear(): void {
     this.clearEntities();
+  }
+
+  resetWorld(): void {
+    this.clearMarbles();
+    this.clearEntities();
+    if (this.world) {
+      this.Box2D.destroy(this.world);
+    }
+    this.world = new this.Box2D.b2World(this.gravity);
   }
 
   clearMarbles(): void {
@@ -109,7 +119,7 @@ export class Box2dPhysics implements IPhysics {
     bodyDef.set_position(new this.Box2D.b2Vec2(x, y));
 
     const body = this.world.CreateBody(bodyDef);
-    body.CreateFixture(circleShape, 1 + Math.random());
+    body.CreateFixture(circleShape, 1 + globalPRNG.next());
     body.SetAwake(false);
     body.SetEnabled(false);
     this.marbleMap[id] = body;
@@ -118,7 +128,7 @@ export class Box2dPhysics implements IPhysics {
   shakeMarble(id: number): void {
     const body = this.marbleMap[id];
     if (body) {
-      body.ApplyLinearImpulseToCenter(new this.Box2D.b2Vec2(Math.random() * 10 - 5, Math.random() * 10 - 5), true);
+      body.ApplyLinearImpulseToCenter(new this.Box2D.b2Vec2(globalPRNG.next() * 10 - 5, globalPRNG.next() * 10 - 5), true);
     }
   }
 
@@ -167,6 +177,22 @@ export class Box2dPhysics implements IPhysics {
         body.ApplyLinearImpulseToCenter(distVector, true);
       }
     });
+  }
+
+  nudgeMarble(id: number, forceX: number, forceY: number): void {
+    const body = this.marbleMap[id];
+    if (body) {
+      body.ApplyLinearImpulseToCenter(new this.Box2D.b2Vec2(forceX, forceY), true);
+    }
+  }
+
+  getMarbleVelocity(id: number): { x: number; y: number } {
+    const body = this.marbleMap[id];
+    if (body) {
+      const v = body.GetLinearVelocity();
+      return { x: v.x, y: v.y };
+    }
+    return { x: 0, y: 0 };
   }
 
   start(): void {

@@ -6,6 +6,8 @@ export interface IPhysics {
 
   clear(): void;
 
+  resetWorld(): void;
+
   clearMarbles(): void;
 
   createStage(stage: StageDef): void;
@@ -21,6 +23,10 @@ export interface IPhysics {
   getEntities(): MapEntityState[];
 
   impact(id: number): void;
+
+  nudgeMarble(id: number, forceX: number, forceY: number): void;
+
+  getMarbleVelocity(id: number): { x: number; y: number };
 
   start(): void;
 
