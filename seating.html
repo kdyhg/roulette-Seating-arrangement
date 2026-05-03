@@ -96,6 +96,7 @@
             #layout-main { gap: 12px !important; padding: 0 !important; break-inside: avoid; }
             .side-bar, .desk, #kyotak > div { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .desk { box-shadow: none !important; }
+            .desk-number { display: none !important; }
         }
     </style>
 </head>
@@ -116,6 +117,7 @@
                     <button id="btnBulkInput" class="btn-purple px-5 py-2.5 rounded-lg font-bold shadow-sm">📋 명단 일괄 입력</button>
                     <button id="btnCopy" class="btn-white px-5 py-2.5 rounded-lg font-bold shadow-sm border-gray-300">📋 명단 복사</button>
                     <button id="btnUndo" class="btn-white px-5 py-2.5 rounded-lg font-bold shadow-sm border-gray-300">↩ 되돌리기</button>
+                    <button id="btnResetLayout" class="btn-white px-5 py-2.5 rounded-lg font-bold shadow-sm border-gray-300">🧹 자리 초기화</button>
                     <button id="swapModeBtn" class="btn-white px-5 py-2.5 rounded-lg font-bold shadow-sm">
                         🔄 자리 바꾸기: <span id="swapStatus" class="text-red-500">OFF</span>
                     </button>

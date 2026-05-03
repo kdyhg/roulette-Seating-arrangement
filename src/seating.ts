@@ -475,6 +475,24 @@ document.getElementById('btnUndo')?.addEventListener('click', () => {
   renderValidationIssues('되돌리기 완료', [], `${snapshot.label} 상태로 되돌렸습니다.`);
 });
 
+document.getElementById('btnResetLayout')?.addEventListener('click', () => {
+  const hasLayout = students.some((name) => name) || Object.keys(fixedSeats).length > 0;
+  if (!hasLayout) {
+    renderValidationIssues('자리 초기화 완료', [], '이미 모든 자리가 비어 있습니다.');
+    return;
+  }
+
+  const confirmed = window.confirm('모든 자리와 고정석을 빈자리로 초기화할까요? 명단과 검증 설정은 유지됩니다.');
+  if (!confirmed) return;
+
+  pushHistory('자리 초기화 전');
+  students = createEmptyLayout(totalStudents);
+  fixedSeats = {};
+  initGrid();
+  saveState();
+  renderValidationIssues('자리 초기화 완료', [], '모든 자리를 빈자리로 초기화했습니다.');
+});
+
 const valModal = document.getElementById('validationModal')!;
 document.getElementById('btnValidationModal')?.addEventListener('click', () => valModal.classList.add('active'));
 document.getElementById('btnCancelValidation')?.addEventListener('click', () => valModal.classList.remove('active'));
@@ -970,6 +988,7 @@ function drawCenteredText(ctx: CanvasRenderingContext2D, text: string, x: number
 }
 
 function saveLayoutAsPng() {
+  const exportTeacherView = body.classList.contains('teacher-view');
   const seatW = 92;
   const seatH = 66;
   const seatGap = 8;
@@ -1004,15 +1023,16 @@ function saveLayoutAsPng() {
   ctx.fillText('자리배치표', canvasW / 2, margin);
 
   const gridLeft = margin + sideW + seatGap * 2;
-  const gridTop = margin + titleH;
+  const layoutTop = margin + titleH;
+  const gridTop = exportTeacherView ? layoutTop : layoutTop + podiumH + podiumGap;
   const leftSideX = margin;
   const rightSideX = gridLeft + gridW + seatGap * 2;
 
   const drawSide = (x: number, label: string) => {
     ctx.fillStyle = '#1e5f85';
-    ctx.fillRect(x, gridTop, sideW, sideH);
+    ctx.fillRect(x, layoutTop, sideW, sideH);
     ctx.save();
-    ctx.translate(x + sideW / 2, gridTop + sideH / 2);
+    ctx.translate(x + sideW / 2, layoutTop + sideH / 2);
     ctx.rotate(Math.PI / 2);
     ctx.fillStyle = '#ffffff';
     ctx.font = '900 24px Pretendard, sans-serif';
@@ -1020,18 +1040,18 @@ function saveLayoutAsPng() {
     ctx.restore();
   };
 
-  drawSide(leftSideX, '복도');
-  drawSide(rightSideX, '운동장');
+  drawSide(leftSideX, exportTeacherView ? '복도' : '운동장');
+  drawSide(rightSideX, exportTeacherView ? '운동장' : '복도');
 
   for (let c = 0; c < columns; c++) {
-    const visualC = isTeacherView ? columns - 1 - c : c;
+    const visualC = exportTeacherView ? columns - 1 - c : c;
     const clusterX = gridLeft + visualC * (clusterW + clusterGap);
     for (let r = 0; r < rowsPerCluster; r++) {
-      const visualR = isTeacherView ? rowsPerCluster - 1 - r : r;
+      const visualR = exportTeacherView ? rowsPerCluster - 1 - r : r;
       for (let p = 0; p < 2; p++) {
         const seatIndex = r * (columns * 2) + c * 2 + p;
         if (seatIndex >= totalStudents) continue;
-        const visualP = isTeacherView ? 1 - p : p;
+        const visualP = exportTeacherView ? 1 - p : p;
         const x = clusterX + visualP * (seatW + seatGap);
         const y = gridTop + visualR * (seatH + seatGap);
         const name = students[seatIndex] || '';
@@ -1042,12 +1062,9 @@ function saveLayoutAsPng() {
         ctx.fillRect(x, y, seatW, seatH);
         ctx.strokeRect(x, y, seatW, seatH);
 
-        ctx.fillStyle = '#d1d5db';
-        ctx.font = '900 24px Pretendard, sans-serif';
-        ctx.fillText(String(seatIndex + 1), x + seatW / 2, y + seatH / 2);
         if (name) {
           ctx.fillStyle = '#111827';
-          ctx.font = '900 17px Pretendard, sans-serif';
+          ctx.font = '900 18px Pretendard, sans-serif';
           drawCenteredText(ctx, name, x + seatW / 2, y + seatH / 2, seatW - 10);
         }
       }
@@ -1056,7 +1073,7 @@ function saveLayoutAsPng() {
 
   const podiumW = 230;
   const podiumX = gridLeft + gridW / 2 - podiumW / 2;
-  const podiumY = gridTop + gridH + podiumGap;
+  const podiumY = exportTeacherView ? gridTop + gridH + podiumGap : layoutTop;
   ctx.fillStyle = '#fbc4ab';
   ctx.strokeStyle = '#e5a88a';
   ctx.lineWidth = 4;
