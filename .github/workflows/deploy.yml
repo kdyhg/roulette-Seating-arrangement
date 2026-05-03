@@ -28,7 +28,7 @@ jobs:
         run: |
           yarn
           npx update-browserslist-db@latest
-          yarn build
+          yarn build:github
       - name: deploy
         uses: peaceiris/actions-gh-pages@v4
         with:
