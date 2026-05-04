@@ -3,6 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <script>
+    (() => {
+      const params = new URLSearchParams(window.location.search);
+      const shouldOpenSeating =
+        !params.has('seating_mode') && !params.has('manual_roulette') && !params.has('names');
+      if (shouldOpenSeating) {
+        window.location.replace('seating.html');
+      }
+    })();
+  </script>
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-5899C1DJM0"></script>
   <script defer src="https://umami.lazygyu.net/script.js" data-website-id="205aee0d-30b6-4c69-a053-0c72c8377be0"></script>
 
@@ -107,6 +117,23 @@
 
   let ready = false;
   let winnerType = 'first';
+  let seatingModeNames = [];
+
+  function hasSameNameMultiset(left, right) {
+    if (left.length !== right.length) return false;
+    const counts = new Map();
+    left.forEach((name) => counts.set(name, (counts.get(name) || 0) + 1));
+    for (const name of right) {
+      const count = counts.get(name);
+      if (!count) return false;
+      if (count === 1) {
+        counts.delete(name);
+      } else {
+        counts.set(name, count - 1);
+      }
+    }
+    return counts.size === 0;
+  }
 
   document.addEventListener('DOMContentLoaded', () => {
     initialize();
@@ -123,20 +150,24 @@
 
     // Seating mode flag
     let isSeatingMode = false;
+    const refreshSeatingPreview = () => {
+      if (!isSeatingMode || !hasSameNameMultiset(getNames(), seatingModeNames)) return;
+      if (window.roulette.previewSeatingOrder) {
+        window.roulette.previewSeatingOrder();
+      }
+    };
 
     if (seatingMode === 'true' && seatingNames) {
       // Seating Mode: fill names, DON'T auto-start, collect all rankings
       isSeatingMode = true;
 
       const names = decodeURIComponent(seatingNames).split(',');
+      seatingModeNames = names;
       // Fill the textarea with names so they appear as marbles
       document.querySelector('#in_names').value = names.join('\n');
 
       // Prepare the roulette engine for seating mode (disables skills)
       window.roulette.prepareSeatingMode(Date.now());
-
-      const rouletteCanvas = document.querySelector('canvas');
-      if (rouletteCanvas) rouletteCanvas.style.visibility = 'hidden';
 
       // Set winner type to 'last' so all marbles are ranked
       winnerType = 'last';
@@ -149,6 +180,7 @@
 
       // Trigger marble setup from textarea contents
       getReady();
+      refreshSeatingPreview();
 
       // Listen for seatingComplete event — fires when ALL marbles finish
       window.roulette.addEventListener('seatingComplete', (e) => {
@@ -159,14 +191,7 @@
         }, 3000);
       });
 
-      // Auto-start roulette and dismiss notice
-      setTimeout(() => {
-        localStorage.setItem('notice', '999'); // suppress notice
-        const noticeEl = document.getElementById('notice');
-        if (noticeEl) noticeEl.style.display = 'none';
-        
-        document.querySelector('#btnStart').click();
-      }, 500);
+      localStorage.setItem('lastViewedNotification', '5');
 
       // DON'T return — let the normal initialization continue so buttons work
     }
@@ -185,6 +210,7 @@
     }
     document.querySelector('#in_names').addEventListener('input', () => {
       getReady();
+      refreshSeatingPreview();
     });
 
     document.querySelector('#in_names').addEventListener('blur', () => {
@@ -215,15 +241,27 @@
       if (oldValue !== newValue) {
         document.querySelector('#in_names').value = newValue;
         getReady();
+        refreshSeatingPreview();
       }
     });
 
     document.querySelector('#btnShuffle').addEventListener('click', () => {
+      if (isSeatingMode) {
+        window.roulette.prepareSeatingMode(Date.now());
+      }
       getReady();
+      refreshSeatingPreview();
     });
 
     document.querySelector('#btnStart').addEventListener('click', () => {
       if (!ready) return;
+      if (isSeatingMode && !hasSameNameMultiset(getNames(), seatingModeNames)) {
+        alert('자리배치 모드에서는 학생 이름을 추가/삭제/수정할 수 없습니다. 순서 변경만 가능합니다.');
+        document.querySelector('#in_names').value = seatingModeNames.join('\n');
+        getReady();
+        refreshSeatingPreview();
+        return;
+      }
       gtag && gtag('event', 'start', {
         'event_category': 'roulette',
         'event_label': 'start',
@@ -241,6 +279,7 @@
         });
       }
       if (isSeatingMode) {
+        refreshSeatingPreview();
         window.roulette.startSeating();
         const rouletteCanvas = document.querySelector('canvas');
         if (rouletteCanvas) rouletteCanvas.style.visibility = 'visible';
@@ -319,6 +358,7 @@
     mapSelector.addEventListener('change', (e) => {
       const index = e.target.value;
       window.roulette.setMap(index);
+      refreshSeatingPreview();
     });
 
     // const checkDonateButtonLoaded = () => {

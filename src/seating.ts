@@ -8,7 +8,7 @@ let isTeacherView = true;
 // Validation Rules
 let requiredPairs: [string, string][] = [];
 let bannedPairs: [string, string][] = [];
-let separatedStudents: string[] = [];
+let separatedGroups: string[][] = [];
 let frontRowStudents: string[] = [];
 
 // Swap mode
@@ -26,7 +26,8 @@ type SeatingSnapshot = {
   fixedSeats: Record<number, string>;
   requiredPairs: [string, string][];
   bannedPairs: [string, string][];
-  separatedStudents: string[];
+  separatedGroups?: string[][];
+  separatedStudents?: string[];
   frontRowStudents: string[];
 };
 
@@ -61,6 +62,41 @@ function parseNameList(text: string): string[] {
     .split(/[\n,]/)
     .map((name) => name.trim())
     .filter((name) => name);
+}
+
+function uniqueNames(names: string[]): string[] {
+  return [...new Set(names.filter((name) => name))];
+}
+
+function normalizeSeparatedGroups(source: unknown): string[][] {
+  if (!Array.isArray(source)) return [];
+  if (source.every((group) => Array.isArray(group))) {
+    return source
+      .map((group) => uniqueNames(group.map((name: unknown) => String(name).trim())))
+      .filter((group) => group.length > 0);
+  }
+
+  return [uniqueNames(source.map((name) => String(name).trim()))].filter((group) => group.length > 0);
+}
+
+function parseSeparatedGroups(text: string): string[][] {
+  const groups: string[][] = [];
+  const groupPattern = /\{([^{}]+)\}/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = groupPattern.exec(text)) !== null) {
+    const names = uniqueNames(parseNameList(match[1]));
+    if (names.length > 0) groups.push(names);
+  }
+
+  if (groups.length > 0) return groups;
+
+  const legacyNames = uniqueNames(parseNameList(text));
+  return legacyNames.length > 0 ? [legacyNames] : [];
+}
+
+function formatSeparatedGroups(groups: string[][]): string {
+  return groups.map((group) => `{${group.join(', ')}}`).join(', ');
 }
 
 function ensureLayoutSize() {
@@ -109,7 +145,7 @@ function createSnapshot(label: string): SeatingSnapshot {
     fixedSeats: cloneFixedSeats(fixedSeats),
     requiredPairs: requiredPairs.map(([a, b]) => [a, b]),
     bannedPairs: bannedPairs.map(([a, b]) => [a, b]),
-    separatedStudents: [...separatedStudents],
+    separatedGroups: separatedGroups.map((group) => [...group]),
     frontRowStudents: [...frontRowStudents],
   };
 }
@@ -129,7 +165,7 @@ function applySnapshot(snapshot: SeatingSnapshot) {
   fixedSeats = cloneFixedSeats(snapshot.fixedSeats);
   requiredPairs = snapshot.requiredPairs.map(([a, b]) => [a, b]);
   bannedPairs = snapshot.bannedPairs.map(([a, b]) => [a, b]);
-  separatedStudents = [...snapshot.separatedStudents];
+  separatedGroups = normalizeSeparatedGroups(snapshot.separatedGroups ?? snapshot.separatedStudents ?? []);
   frontRowStudents = [...snapshot.frontRowStudents];
   inputTotal.value = totalStudents.toString();
   inputCols.value = columns.toString();
@@ -165,7 +201,7 @@ function saveState() {
       fixedSeats,
       requiredPairs,
       bannedPairs,
-      separatedStudents,
+      separatedGroups,
       frontRowStudents,
       historyStack,
     })
@@ -190,7 +226,7 @@ function loadState(): boolean {
     if (s.fixedSeats) fixedSeats = s.fixedSeats;
     if (s.requiredPairs) requiredPairs = s.requiredPairs;
     if (s.bannedPairs) bannedPairs = s.bannedPairs;
-    if (s.separatedStudents) separatedStudents = s.separatedStudents;
+    separatedGroups = normalizeSeparatedGroups(s.separatedGroups ?? s.separatedStudents ?? []);
     if (s.frontRowStudents) frontRowStudents = s.frontRowStudents;
     if (Array.isArray(s.historyStack)) historyStack = s.historyStack.slice(0, 20);
     ensureLayoutSize();
@@ -510,10 +546,7 @@ document.getElementById('btnSaveValidation')?.addEventListener('click', () => {
     .map((s) => s.split('-').map((n) => n.trim()) as [string, string])
     .filter((p) => p.length === 2 && p[0] && p[1]);
 
-  separatedStudents = (document.getElementById('valSeparated') as HTMLInputElement).value
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => s);
+  separatedGroups = parseSeparatedGroups((document.getElementById('valSeparated') as HTMLInputElement).value);
   frontRowStudents = (document.getElementById('valFrontRow') as HTMLInputElement).value
     .split(',')
     .map((s) => s.trim())
@@ -687,38 +720,40 @@ function rearrangeForConstraints(winners: string[], fixed: Record<number, string
     }
   }
 
-  const sepNames = separatedStudents.filter((name) => layout.includes(name));
-  for (let i = 0; i < sepNames.length; i++) {
-    for (let j = i + 1; j < sepNames.length; j++) {
-      const idx1 = layout.indexOf(sepNames[i]);
-      const idx2 = layout.indexOf(sepNames[j]);
-      if (idx1 === -1 || idx2 === -1 || fixed[idx2]) continue;
+  for (const separatedGroup of separatedGroups) {
+    const sepNames = separatedGroup.filter((name) => layout.includes(name));
+    for (let i = 0; i < sepNames.length; i++) {
+      for (let j = i + 1; j < sepNames.length; j++) {
+        const idx1 = layout.indexOf(sepNames[i]);
+        const idx2 = layout.indexOf(sepNames[j]);
+        if (idx1 === -1 || idx2 === -1 || fixed[idx2]) continue;
 
-      const pos1 = getCoords(idx1);
-      const pos2 = getCoords(idx2);
-      if (!pos1 || !pos2) continue;
+        const pos1 = getCoords(idx1);
+        const pos2 = getCoords(idx2);
+        if (!pos1 || !pos2) continue;
 
-      const dx = Math.abs(pos1.x - pos2.x);
-      const dy = Math.abs(pos1.y - pos2.y);
-      if (dx > 1 || dy > 1) continue;
+        const dx = Math.abs(pos1.x - pos2.x);
+        const dy = Math.abs(pos1.y - pos2.y);
+        if (dx > 1 || dy > 1) continue;
 
-      for (const candidate of fillableIndices) {
-        if (candidate === idx1 || candidate === idx2 || fixed[candidate]) continue;
-        const candidateName = layout[candidate];
-        if (!candidateName || sepNames.includes(candidateName)) continue;
+        for (const candidate of fillableIndices) {
+          if (candidate === idx1 || candidate === idx2 || fixed[candidate]) continue;
+          const candidateName = layout[candidate];
+          if (!candidateName || sepNames.includes(candidateName)) continue;
 
-        const isRequiredName = requiredPairs.some(([r1, r2]) => candidateName === r1 || candidateName === r2);
-        if (isRequiredName) continue;
+          const isRequiredName = requiredPairs.some(([r1, r2]) => candidateName === r1 || candidateName === r2);
+          if (isRequiredName) continue;
 
-        const candidatePos = getCoords(candidate);
-        if (!candidatePos) continue;
+          const candidatePos = getCoords(candidate);
+          if (!candidatePos) continue;
 
-        const newDx = Math.abs(candidatePos.x - pos1.x);
-        const newDy = Math.abs(candidatePos.y - pos1.y);
-        if (newDx > 1 || newDy > 1) {
-          layout[candidate] = layout[idx2];
-          layout[idx2] = candidateName;
-          break;
+          const newDx = Math.abs(candidatePos.x - pos1.x);
+          const newDy = Math.abs(candidatePos.y - pos1.y);
+          if (newDx > 1 || newDy > 1) {
+            layout[candidate] = layout[idx2];
+            layout[idx2] = candidateName;
+            break;
+          }
         }
       }
     }
@@ -783,7 +818,7 @@ function renderValidationIssues(title: string, issues: ValidationIssue[], succes
 }
 
 function getRuleNames(): string[] {
-  return [...requiredPairs.flat(), ...bannedPairs.flat(), ...separatedStudents, ...frontRowStudents].filter(
+  return [...requiredPairs.flat(), ...bannedPairs.flat(), ...separatedGroups.flat(), ...frontRowStudents].filter(
     (name) => name
   );
 }
@@ -905,17 +940,19 @@ function getConstraintConflicts(): ValidationIssue[] {
     }
   });
 
-  const fixedSeparated = separatedStudents
-    .map((name) => ({ name, index: fixedEntries.find((entry) => entry.name === name)?.index }))
-    .filter((entry): entry is { name: string; index: number } => entry.index !== undefined);
-  for (let i = 0; i < fixedSeparated.length; i++) {
-    for (let j = i + 1; j < fixedSeparated.length; j++) {
-      if (areAdjacent(fixedSeparated[i].index, fixedSeparated[j].index)) {
-        issues.push({
-          message: `${fixedSeparated[i].name}와 ${fixedSeparated[j].name}는 인접 금지인데 고정 좌석이 인접합니다.`,
-          seats: [fixedSeparated[i].index, fixedSeparated[j].index],
-          blocking: true,
-        });
+  for (const separatedGroup of separatedGroups) {
+    const fixedSeparated = separatedGroup
+      .map((name) => ({ name, index: fixedEntries.find((entry) => entry.name === name)?.index }))
+      .filter((entry): entry is { name: string; index: number } => entry.index !== undefined);
+    for (let i = 0; i < fixedSeparated.length; i++) {
+      for (let j = i + 1; j < fixedSeparated.length; j++) {
+        if (areAdjacent(fixedSeparated[i].index, fixedSeparated[j].index)) {
+          issues.push({
+            message: `${fixedSeparated[i].name}와 ${fixedSeparated[j].name}는 같은 인접 금지 그룹인데 고정 좌석이 인접합니다.`,
+            seats: [fixedSeparated[i].index, fixedSeparated[j].index],
+            blocking: true,
+          });
+        }
       }
     }
   }
@@ -945,16 +982,18 @@ function getValidationIssues(currentStudents: string[]): ValidationIssue[] {
     }
   }
 
-  const sepIndices = separatedStudents
-    .map((s) => ({ name: s, index: currentStudents.indexOf(s) }))
-    .filter((i) => i.index !== -1);
-  for (let i = 0; i < sepIndices.length; i++) {
-    for (let j = i + 1; j < sepIndices.length; j++) {
-      if (areAdjacent(sepIndices[i].index, sepIndices[j].index)) {
-        issues.push({
-          message: `${sepIndices[i].name}와 ${sepIndices[j].name}가 인접 금지 조건을 어겼습니다.`,
-          seats: [sepIndices[i].index, sepIndices[j].index],
-        });
+  for (const separatedGroup of separatedGroups) {
+    const sepIndices = separatedGroup
+      .map((s) => ({ name: s, index: currentStudents.indexOf(s) }))
+      .filter((i) => i.index !== -1);
+    for (let i = 0; i < sepIndices.length; i++) {
+      for (let j = i + 1; j < sepIndices.length; j++) {
+        if (areAdjacent(sepIndices[i].index, sepIndices[j].index)) {
+          issues.push({
+            message: `${sepIndices[i].name}와 ${sepIndices[j].name}가 같은 인접 금지 그룹 조건을 어겼습니다.`,
+            seats: [sepIndices[i].index, sepIndices[j].index],
+          });
+        }
       }
     }
   }
@@ -1159,7 +1198,7 @@ document.getElementById('btnRunRoulette')?.addEventListener('click', () => {
   }
 
   const hasConstraints =
-    requiredPairs.length > 0 || bannedPairs.length > 0 || frontRowStudents.length > 0 || separatedStudents.length > 0;
+    requiredPairs.length > 0 || bannedPairs.length > 0 || frontRowStudents.length > 0 || separatedGroups.length > 0;
 
   let predeterminedOrder: string[] = [];
   if (hasConstraints) {
@@ -1193,7 +1232,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const frEl = document.getElementById('valFrontRow') as HTMLInputElement;
     if (rpEl && requiredPairs.length > 0) rpEl.value = requiredPairs.map((p) => p.join('-')).join(', ');
     if (bpEl && bannedPairs.length > 0) bpEl.value = bannedPairs.map((p) => p.join('-')).join(', ');
-    if (sepEl && separatedStudents.length > 0) sepEl.value = separatedStudents.join(', ');
+    if (sepEl && separatedGroups.length > 0) sepEl.value = formatSeparatedGroups(separatedGroups);
     if (frEl && frontRowStudents.length > 0) frEl.value = frontRowStudents.join(', ');
   }
 

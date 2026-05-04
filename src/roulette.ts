@@ -539,6 +539,18 @@ export class Roulette extends EventTarget {
     this._predeterminedOrder = order;
   }
 
+  public previewSeatingOrder() {
+    if (!this._seatingMode || this._marbles.length === 0 || this._predeterminedOrder.length === 0) {
+      return;
+    }
+
+    const originalNames = this._marbles.map((marble) => marble.name);
+    const mappedNames = this._runHeadlessSimulationAndGetMappedNames(originalNames);
+    if (mappedNames) {
+      this.setMarbles(mappedNames);
+    }
+  }
+
   private _getFinishOrderIds(): number[] {
     const finishOrderIds = this._winners.map((winner) => winner.id);
     if (this._winner && !finishOrderIds.includes(this._winner.id)) {

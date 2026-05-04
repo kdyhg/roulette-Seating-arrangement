@@ -107,7 +107,7 @@
             <h1 class="text-4xl font-black text-[#1e293b] mb-2">자리배치표 설정</h1>
             <p class="text-gray-500 font-medium" id="view-label">현재: 교사 시점 (운동장: 우측 / 교탁: 아래)</p>
             <div class="mt-4">
-                <button type="button" class="text-indigo-600 font-bold hover:underline" onclick="window.location.assign('index.html')">← 마블 룰렛 화면으로 돌아가기</button>
+                <button type="button" class="text-indigo-600 font-bold hover:underline" onclick="window.location.assign('index.html?manual_roulette=true')">← 마블 룰렛 화면으로 돌아가기</button>
             </div>
         </header>
 
@@ -208,8 +208,8 @@
             <label class="block text-sm font-bold text-gray-700 mb-1">금지 짝꿍 (예: 홍길동-김철수, 쉼표 구분)</label>
             <input type="text" id="valBannedPairs" class="w-full border p-2 rounded-lg mb-4 text-sm outline-none focus:border-indigo-500" placeholder="홍길동-김철수, 이영희-박민수">
             
-            <label class="block text-sm font-bold text-gray-700 mb-1">인접 금지 그룹 (상하좌우/대각선 분리, 쉼표 구분)</label>
-            <input type="text" id="valSeparated" class="w-full border p-2 rounded-lg mb-4 text-sm outline-none focus:border-indigo-500" placeholder="김동연, 강동원, 원빈">
+            <label class="block text-sm font-bold text-gray-700 mb-1">인접 금지 그룹 (상하좌우/대각선 분리, 예: {홍길동, 김철수}, {이영희, 박민수})</label>
+            <input type="text" id="valSeparated" class="w-full border p-2 rounded-lg mb-4 text-sm outline-none focus:border-indigo-500" placeholder="{홍길동, 김철수}, {이영희, 박민수}">
             
             <label class="block text-sm font-bold text-gray-700 mb-1">필수 1,2열 배치 학생 (저시력 학생 등, 쉼표 구분)</label>
             <input type="text" id="valFrontRow" class="w-full border p-2 rounded-lg mb-4 text-sm outline-none focus:border-indigo-500" placeholder="유재석, 박명수">
