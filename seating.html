@@ -116,6 +116,7 @@
                 <div class="flex flex-wrap gap-2">
                     <button id="btnBulkInput" class="btn-purple px-5 py-2.5 rounded-lg font-bold shadow-sm">📋 명단 일괄 입력</button>
                     <button id="btnCopy" class="btn-white px-5 py-2.5 rounded-lg font-bold shadow-sm border-gray-300">📋 명단 복사</button>
+                    <button id="btnUsageModal" class="btn-white px-5 py-2.5 rounded-lg font-bold shadow-sm border-gray-300">❔ 사용방법</button>
                     <button id="btnUndo" class="btn-white px-5 py-2.5 rounded-lg font-bold shadow-sm border-gray-300">↩ 되돌리기</button>
                     <button id="btnResetLayout" class="btn-white px-5 py-2.5 rounded-lg font-bold shadow-sm border-gray-300">🧹 자리 초기화</button>
                     <button id="swapModeBtn" class="btn-white px-5 py-2.5 rounded-lg font-bold shadow-sm">
@@ -166,6 +167,55 @@
                 </div>
             </div>
             <div id="sidebar-right" class="side-bar"><span class="vertical-text">운 동 장</span></div>
+        </div>
+    </div>
+
+    <!-- 사용방법 모달 -->
+    <div id="usageModal" class="modal">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[85vh] overflow-y-auto">
+            <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                    <h3 class="text-2xl font-black text-slate-800">사용방법</h3>
+                    <p class="text-sm text-gray-500 mt-1">자리 고정, 검증 조건, 룰렛 배치를 순서대로 진행합니다.</p>
+                </div>
+                <button id="btnCloseUsageTop" class="px-3 py-1.5 text-gray-400 font-bold hover:text-gray-700">닫기</button>
+            </div>
+
+            <div class="space-y-5 text-sm text-slate-700 leading-6">
+                <section>
+                    <h4 class="font-black text-slate-900 mb-2">1. 명단 입력</h4>
+                    <p>먼저 <strong>명단 일괄 입력</strong>을 눌러 학생 이름을 쉼표나 줄바꿈으로 입력합니다. 명단을 저장하면 좌석은 빈자리 상태로 시작됩니다.</p>
+                </section>
+
+                <section>
+                    <h4 class="font-black text-slate-900 mb-2">2. 고정 좌석 지정</h4>
+                    <p>고정하고 싶은 자리를 클릭한 뒤 드롭다운에서 학생을 선택합니다. 고정된 학생은 룰렛 대상에서 제외되고 해당 자리에 유지됩니다.</p>
+                </section>
+
+                <section>
+                    <h4 class="font-black text-slate-900 mb-2">3. 검증 설정</h4>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>필수 짝꿍</strong>: <code>홍길동-김철수, 이영희-박민수</code></li>
+                        <li><strong>금지 짝꿍</strong>: 서로 짝자리에 앉으면 안 되는 학생을 같은 방식으로 입력합니다.</li>
+                        <li><strong>인접 금지 그룹</strong>: <code>{홍길동, 김철수}, {이영희, 박민수}</code>처럼 중괄호로 그룹을 나눕니다.</li>
+                        <li><strong>필수 1,2열 배치</strong>: 저시력 학생처럼 앞쪽 1,2열에 배치해야 하는 학생을 입력합니다.</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h4 class="font-black text-slate-900 mb-2">4. 룰렛 돌리기</h4>
+                    <p><strong>룰렛 돌리기</strong>를 누르면 룰렛 화면으로 이동합니다. 맵을 바꾸거나 구슬 순서를 섞은 뒤 <strong>Start</strong>를 누르면, 검증 조건을 만족하도록 보정된 결과가 자리배치에 적용됩니다.</p>
+                </section>
+
+                <section>
+                    <h4 class="font-black text-slate-900 mb-2">5. 확인과 저장</h4>
+                    <p><strong>배치 검증</strong>으로 실패 이유를 확인하고, 필요한 경우 <strong>되돌리기</strong>나 <strong>자리 초기화</strong>를 사용할 수 있습니다. 완성된 배치는 인쇄/PDF 또는 이미지로 저장합니다.</p>
+                </section>
+            </div>
+
+            <div class="flex justify-end mt-6">
+                <button id="btnCloseUsage" class="px-6 py-2 btn-purple rounded-lg font-bold">확인</button>
+            </div>
         </div>
     </div>
 

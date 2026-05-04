@@ -529,6 +529,12 @@ document.getElementById('btnResetLayout')?.addEventListener('click', () => {
   renderValidationIssues('자리 초기화 완료', [], '모든 자리를 빈자리로 초기화했습니다.');
 });
 
+const usageModal = document.getElementById('usageModal')!;
+const closeUsageModal = () => usageModal.classList.remove('active');
+document.getElementById('btnUsageModal')?.addEventListener('click', () => usageModal.classList.add('active'));
+document.getElementById('btnCloseUsage')?.addEventListener('click', closeUsageModal);
+document.getElementById('btnCloseUsageTop')?.addEventListener('click', closeUsageModal);
+
 const valModal = document.getElementById('validationModal')!;
 document.getElementById('btnValidationModal')?.addEventListener('click', () => valModal.classList.add('active'));
 document.getElementById('btnCancelValidation')?.addEventListener('click', () => valModal.classList.remove('active'));
