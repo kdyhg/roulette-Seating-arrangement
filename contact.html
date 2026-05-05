@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f6f7fb;
+            --panel: #ffffff;
+            --ink: #162033;
+            --muted: #667085;
+            --line: #e3e7ef;
+            --accent: #5851db;
+            --accent-strong: #3931ba;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            line-height: 1.65;
+        }
+
+        a { color: var(--accent); text-decoration: none; font-weight: 700; }
+        a:hover { color: var(--accent-strong); text-decoration: underline; }
+
+        .shell {
+            width: min(960px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 32px 0 56px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .brand {
+            color: var(--ink);
+            font-size: 1rem;
+            font-weight: 900;
+            letter-spacing: 0;
+        }
+
+        .nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 10px 16px;
+            font-size: 0.95rem;
+        }
+
+        main {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: clamp(24px, 5vw, 48px);
+            box-shadow: 0 20px 48px rgba(22, 32, 51, 0.08);
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            font-size: clamp(2rem, 5vw, 3.25rem);
+            line-height: 1.1;
+            letter-spacing: 0;
+        }
+
+        .lead {
+            margin: 0 0 30px;
+            color: var(--muted);
+            font-size: 1.08rem;
+        }
+
+        section {
+            padding: 24px 0;
+            border-top: 1px solid var(--line);
+        }
+
+        section:first-of-type { border-top: 0; padding-top: 4px; }
+        h2 { margin: 0 0 10px; font-size: 1.25rem; }
+        p { margin: 0 0 12px; }
+        ul { margin: 0; padding-left: 1.2rem; }
+        li + li { margin-top: 6px; }
+
+        .notice {
+            margin-top: 18px;
+            padding: 16px 18px;
+            border: 1px solid #c7d2fe;
+            border-radius: 8px;
+            background: #eef2ff;
+            color: #27335f;
+        }
+
+        .contact-box {
+            display: inline-flex;
+            align-items: center;
+            max-width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fbfcff;
+            overflow-wrap: anywhere;
+        }
+
+        footer {
+            margin-top: 24px;
+            color: var(--muted);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        @media (max-width: 640px) {
+            .topbar { align-items: flex-start; flex-direction: column; }
+            .nav { justify-content: flex-start; }
+            main { padding: 24px; }
+        }
+    </style>
+    <title>문의 | Marble Roulette 자리배치</title>
+    <meta name="description" content="Marble Roulette 자리배치 문의 안내">
+</head>
+<body>
+    <div class="shell">
+        <header class="topbar">
+            <a class="brand" href="#" onclick="window.location.assign('seating.html'); return false;">Marble Roulette 자리배치</a>
+            <nav class="nav" aria-label="사이트 정보">
+                <a href="#" onclick="window.location.assign('seating.html'); return false;">자리배치</a>
+                <a href="#" onclick="window.location.assign('index.html?manual_roulette=true'); return false;">룰렛</a>
+                <a href="#" onclick="window.location.assign('about.html'); return false;">About</a>
+                <a href="#" onclick="window.location.assign('contact.html'); return false;">문의</a>
+                <a href="#" onclick="window.location.assign('privacy.html'); return false;">개인정보처리방침</a>
+            </nav>
+        </header>
+
+        <main>
+            <h1>문의</h1>
+            <p class="lead">오류 제보, 기능 제안, 개인정보 관련 요청은 아래 이메일로 보내 주세요.</p>
+
+            <section>
+                <h2>이메일</h2>
+                <p><a class="contact-box" href="mailto:kdy0123012300@gmail.com">kdy0123012300@gmail.com</a></p>
+                <p>문의할 때 문제가 발생한 페이지, 사용한 브라우저, 재현 순서를 함께 적어주시면 더 빠르게 확인할 수 있습니다.</p>
+            </section>
+
+            <section>
+                <h2>개인정보 관련 요청</h2>
+                <p>개인정보 처리와 관련한 열람, 정정, 삭제, 처리정지 요청도 같은 이메일로 접수합니다. 문의 내용에 포함된 이메일 주소와 본문은 답변 및 이력 확인을 위해 필요한 기간 동안 보관될 수 있습니다.</p>
+            </section>
+
+            <section>
+                <h2>광고 및 제휴 문의</h2>
+                <p>사이트 광고, 제휴, 교육 현장 활용 제안도 이메일로 연락해 주세요. 사용자 경험을 해치지 않는 범위에서 검토합니다.</p>
+            </section>
+        </main>
+
+        <footer>룰렛 자리배치. <a href="#" onclick="window.location.assign('privacy.html'); return false;">개인정보처리방침</a></footer>
+    </div>
+</body>
+</html>
