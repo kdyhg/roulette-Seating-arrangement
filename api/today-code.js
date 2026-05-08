@@ -16,8 +16,8 @@ module.exports = function handler(req, res) {
   <rect width="170" height="130" rx="12" fill="#f8fafc"/>
   <rect x="8" y="8" width="154" height="114" rx="10" fill="#ffffff" stroke="#dbe3ef"/>
   <text x="85" y="34" text-anchor="middle" font-size="13" font-family="Arial, sans-serif" fill="#475569">오늘의 입장 코드</text>
-  <text x="85" y="72" text-anchor="middle" font-size="20" font-weight="700" font-family="Arial, sans-serif" fill="#4f46e5">${escapeXml(code)}</text>
-  <text x="85" y="96" text-anchor="middle" font-size="11" font-family="Arial, sans-serif" fill="#64748b">${escapeXml(dateKey)}</text>
+  <text x="85" y="76" text-anchor="middle" font-size="34" font-weight="700" font-family="Arial, sans-serif" fill="#4f46e5">${escapeXml(code)}</text>
+  <text x="85" y="98" text-anchor="middle" font-size="11" font-family="Arial, sans-serif" fill="#64748b">${escapeXml(dateKey)}</text>
   <text x="85" y="112" text-anchor="middle" font-size="10" font-family="Arial, sans-serif" fill="#009664">클릭해서 복사</text>
 </svg>`.trim();
 

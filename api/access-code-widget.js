@@ -61,7 +61,7 @@ module.exports = function handler(req, res) {
     }
     .code {
       color: #4f46e5;
-      font-size: 20px;
+      font-size: 30px;
       font-weight: 700;
       line-height: 1;
       letter-spacing: 0;

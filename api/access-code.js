@@ -62,7 +62,7 @@ module.exports = function handler(req, res) {
       border-radius: 10px;
       background: #f8fafc;
       color: #4f46e5;
-      font-size: 1.65rem;
+      font-size: 2.8rem;
       font-weight: 900;
       letter-spacing: 0;
       user-select: all;
