@@ -116,9 +116,9 @@ function createGate() {
       }
     </style>
     <form class="gate-panel">
-      <h2>오늘의 이용 코드를 입력해 주세요</h2>
-      <p>네이버 블로그에 표시된 오늘의 코드를 입력하면 자리배치와 룰렛 기능을 자유롭게 사용할 수 있습니다.</p>
-      <label for="daily-code-input">이용 코드</label>
+      <h2>오늘의 입장 코드를 입력해 주세요</h2>
+      <p>네이버 블로그에 표시된 오늘의 코드를 입력하면 이 서비스를 자유롭게 사용할 수 있습니다.</p>
+      <label for="daily-code-input">입장 코드</label>
       <input id="daily-code-input" name="code" placeholder="MR-0508-ABC123" autocomplete="one-time-code" />
       <button type="submit">확인하고 시작하기</button>
       <div class="gate-message" aria-live="polite"></div>

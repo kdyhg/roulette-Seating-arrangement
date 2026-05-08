@@ -1,5 +1,12 @@
 const { getKstDateKey, makeDailyCode, normalizeCode } = require('../lib/daily-code');
 
+function setSharedAccessHeaders(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+}
+
 function parseBody(value) {
   if (!value) return {};
   if (Buffer.isBuffer(value)) return parseBody(value.toString('utf8'));
@@ -26,6 +33,13 @@ function readBody(req) {
 }
 
 module.exports = async function handler(req, res) {
+  setSharedAccessHeaders(res);
+
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     res.status(405).json({ ok: false, message: 'POST only' });
@@ -37,7 +51,6 @@ module.exports = async function handler(req, res) {
   const expectedCode = normalizeCode(makeDailyCode(dateKey));
   const inputCode = normalizeCode(body.code);
 
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
   res.status(200).json({
     ok: inputCode === expectedCode,
     date: dateKey,
