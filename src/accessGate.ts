@@ -106,6 +106,14 @@ function createGate() {
         font-size: 0.82rem;
         line-height: 1.5;
       }
+      #daily-code-gate .gate-hint a {
+        color: #4f46e5;
+        font-weight: 900;
+        text-decoration: none;
+      }
+      #daily-code-gate .gate-hint a:hover {
+        text-decoration: underline;
+      }
     </style>
     <form class="gate-panel">
       <h2>오늘의 이용 코드를 입력해 주세요</h2>
@@ -114,7 +122,11 @@ function createGate() {
       <input id="daily-code-input" name="code" placeholder="MR-0508-ABC123" autocomplete="one-time-code" />
       <button type="submit">확인하고 시작하기</button>
       <div class="gate-message" aria-live="polite"></div>
-      <div class="gate-hint">코드는 매일 0시 기준으로 바뀝니다. 블로그 위젯에 보이는 최신 코드를 그대로 입력해 주세요.</div>
+      <div class="gate-hint">
+        코드는 매일 0시 기준으로 바뀝니다.<br />
+        오늘의 코드 확인하기:
+        <a href="https://blog.naver.com/math_dt" target="_blank" rel="noopener noreferrer">https://blog.naver.com/math_dt</a>
+      </div>
     </form>
   `;
 
