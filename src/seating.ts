@@ -1,3 +1,5 @@
+import './accessGate';
+
 let totalStudents = 23;
 let columns = 3;
 let roster: string[] = [];

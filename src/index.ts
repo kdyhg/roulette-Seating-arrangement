@@ -1,3 +1,4 @@
+import './accessGate';
 import './localization';
 import options from './options';
 import { registerServiceWorker } from './registerServiceWorker';
